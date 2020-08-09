@@ -4,7 +4,7 @@
 
 说真的,强烈不推荐你使用这个色图插件,但是既然你要用,那我也没法
 
-前略...(clone,安装依赖)
+前略...(部署mirai,clone,安装依赖)
 
 修改setu_new_test.py中qq,authkey和mirai_api_http的值,在注释写着pixiv登陆的地方填写自己的用户名和密码(用户名形如user_xxxxxxxx)
 
