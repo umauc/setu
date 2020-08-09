@@ -1,0 +1,8 @@
+aiohttp == "*"
+Pillow == "*"
+requests == "*"
+kuriyama == "*"
+regex == "*"
+beautifulsoup4 == "*"
+imagehash == "*"
+pixivpy == "*"
