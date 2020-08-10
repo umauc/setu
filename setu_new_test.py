@@ -3,6 +3,7 @@ from io import BytesIO
 import json
 import random
 import os
+import requests
 from mirai import Mirai, Plain, GroupMessage, Group, Image, Member, At, FriendMessage, MessageChain, Friend, TempMessage
 import regex
 from bs4 import BeautifulSoup
@@ -15,8 +16,8 @@ from PIL import ImageFile
 from pixivpy3 import *
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-qq = QQ # 字段 qq 的值
-authKey = 'authKey' # 字段 authKey 的值
+qq =   # 字段 qq 的值
+authKey = 'authKey'  # 字段 authKey 的值
 # httpapi所在主机的地址端口,如果 setting.yml 文件里字段 "enableWebsocket" 的值为 "true" 则需要将 "/" 换成 "/ws", 否则将接收不到消息.
 mirai_api_http = '127.0.0.1:8080/ws'
 
@@ -196,9 +197,9 @@ class config(object):
 
     def upload_delete(self,pid):
         try:
-            self.user_config.get('pid').remove(int(pid))
+            self.user_config.get('data').get('pid').remove(int(pid))
         except:
-            self.user_config.get('r18_pid').remove(int(pid))
+            self.user_config.get('data').get('r18_pid').remove(int(pid))
         json.dump(self.user_config, open('config.json', 'w'))
 
     def permission_set(self, user, permission):
@@ -292,7 +293,7 @@ async def setu(app: Mirai, gm: GroupMessage, group: Group, member: Member):
                     permission = config.permission_get(member.id)
                     if permission == 6:
                         await app.sendGroupMessage(group, [At(target=member.id), Plain(text='已删除')])
-                        config.upload_delete(int(keyword.replace('delete','')))
+                        config.upload_delete(keyword.replace('delete',''))
                     else:
                         await app.sendGroupMessage(group, [At(target=member.id), Plain(text='你是个锤子插件管理员，爪巴')])
                 elif keyword == '':
@@ -439,7 +440,7 @@ async def setu_upload(app: Mirai, message: MessageChain, friend: Friend):
                         all_images_pid_r18.append(i)
                         all_images_pid.remove(i)
             except:
-                pass
+                raise
         except:
             pass
         try:
