@@ -6,7 +6,7 @@
 
 前略...(部署mirai,clone,安装依赖)
 
-修改setu_new_test.py中qq,authkey和mirai_api_http的值,在注释写着pixiv登陆的地方填写自己的用户名和密码(用户名形如user_xxxxxxxx)
+修改setu_config.py中对应的值(Pixiv用户名形如user_xxxxxxxx)
 
 后略...
 
