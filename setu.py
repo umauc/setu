@@ -20,7 +20,6 @@ from PIL import ImageFile
 from pixivpy3 import *
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from setu_config import *
-from tenacity import retry
 
 app = Mirai(f"mirai://{mirai_api_http}?authKey={authKey}&qq={qq}")
 
@@ -35,7 +34,6 @@ class setu_get(object):
         self.setu_url = f'https://api.lolicon.app/setu/?apikey={setu_key}&size1200=true&keyword='
         self.setu_url_r18 = f'https://api.lolicon.app/setu/?apikey={setu_key}&size1200=true&r18=1&keyword='
 
-    @retry(stop=stop_after_attempt(1))
     def local(self,r18=False):
         self.data = json.load(open('data.json', 'r'))
         pid_len = int(len(self.data.get('data').get('pid')))
@@ -44,15 +42,16 @@ class setu_get(object):
             self.pid = self.data.get('data').get('pid')[random.randint(0,pid_len-1)]
         else:
             self.pid = self.data.get('data').get('r18_pid')[random.randint(0,r18_pid_len-1)]
-        pic_data = api.illust_detail(self.pid)
         try:
-            pic_data.get('illust')
-        except:
-            config.upload_delete(self.pid)
-            raise TypeError
-        else:
+            pic_data = api.illust_detail(self.pid)
             self.title = pic_data.get('illust').get('title')
             self.url = pic_data.get('illust').get('image_urls').get('large').replace('pximg.net','pixiv.cat')
+            return {'pid':self.pid,'title':self.title,'url':self.url}
+        except:
+            pic_data = requests.get(f'https://api.imjad.cn/pixiv/v1/?type=illust&id={self.pid}').json().replace('response','illust')[0]
+            self.title = pic_data.get('illust').get('title')
+            self.url = pic_data.get('illust').get('image_urls').get(
+                'medium').replace('pximg.net', 'pixiv.cat')
             return {'pid':self.pid,'title':self.title,'url':self.url}
 
 
