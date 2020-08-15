@@ -42,17 +42,9 @@ class setu_get(object):
             self.pid = self.data.get('data').get('pid')[random.randint(0,pid_len-1)]
         else:
             self.pid = self.data.get('data').get('r18_pid')[random.randint(0,r18_pid_len-1)]
-        try:
-            pic_data = api.illust_detail(self.pid)
-            self.title = pic_data.get('illust').get('title')
-            self.url = pic_data.get('illust').get('image_urls').get('large').replace('pximg.net','pixiv.cat')
-            return {'pid':self.pid,'title':self.title,'url':self.url}
-        except:
-            pic_data = requests.get(f'https://api.imjad.cn/pixiv/v1/?type=illust&id={self.pid}').json().replace('response','illust')[0]
-            self.title = pic_data.get('illust').get('title')
-            self.url = pic_data.get('illust').get('image_urls').get(
-                'medium').replace('pximg.net', 'pixiv.cat')
-            return {'pid':self.pid,'title':self.title,'url':self.url}
+        info = pic_get_info(self.pid)
+        return info
+
 
 
     def web(self,keyword='',r18=False):
@@ -70,7 +62,25 @@ class setu_get(object):
             self.title = self.data.get('title')
             return {'pid':self.pid,'title':self.title,'url':self.url}
 
-
+def pic_get_info(pid):
+    try:
+        pic_data = api.illust_detail(pid)
+        title = pic_data.get('illust').get('title')
+        url = pic_data.get('illust').get('image_urls').get('large').replace('pximg.net', 'pixiv.cat')
+        if pic_data.get('illust').get('tags')[0].get('name') == 'R-18':
+            r18 = True
+        else:
+            r18 = False
+        return {'pid':pid, 'title': title, 'url': url, 'r18': r18}
+    except:
+        pic_data = requests.get(f'https://api.imjad.cn/pixiv/v1/?type=illust&id={pid}').json()
+        title = pic_data.get('response')[0].get('title')
+        url = pic_data.get('response')[0].get('image_urls').get('medium').replace('pximg.net', 'pixiv.cat')
+        if pic_data.get('response')[0].get('age_limit') == 'all-age':
+            r18 = False
+        else:
+            r18 = True
+        return {'pid':pid,'title':title,'url':url,'r18':r18}
 
 async def pic_get(url):
     try:
@@ -432,7 +442,7 @@ async def setu_upload(app: Mirai, message: MessageChain, friend: Friend):
             print(friend.nickname+'：图片差异处理')
             for i in range(len(all_images_url)):
                 try:
-                    diff = await image_match(url1='https://pixiv.cat/' + str(all_images_pid_for[i]) + '.png', url2=all_images_url[i])
+                    diff = await image_match(url1=pic_get_info(all_images_pid_for[i]), url2=all_images_url[i])
                     if diff < 0.9:
                         all_images_pid.remove(i)
                 except:
@@ -442,7 +452,7 @@ async def setu_upload(app: Mirai, message: MessageChain, friend: Friend):
                 await app.sendFriendMessage(user,[Plain(text='R18识别')])
                 print(friend.nickname+'：R18识别')
                 for i in all_images_pid:
-                    if api.illust_detail(i).get('illust').get('tags')[0].get('name') == 'R-18':
+                    if pic_get_info(i).get('r18') == True:
                         all_images_pid_r18.append(i)
                         all_images_pid.remove(i)
             except:
