@@ -45,8 +45,6 @@ class setu_get(object):
         info = pic_get_info(self.pid)
         return info
 
-
-
     def web(self,keyword='',r18=False):
         print('获取数据')
         if r18 == False:
