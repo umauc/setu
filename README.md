@@ -5,6 +5,7 @@
 ## 部署
 
 前略，部署mirai并启用mirai-api-http插件
+
 '''
 git clone https://github.com/umauc/setu.git
 cd setu
