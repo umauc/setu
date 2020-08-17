@@ -1,18 +1,21 @@
 # setu
-基于python-mirai写的色图插件(不推荐使用)
+
+基于python-mirai的色图插件
+
 ## 部署
 
-说真的,强烈不推荐你使用这个色图插件,但是既然你要用,那我也没法
-
-前略...(部署mirai,clone,安装依赖)
-
-修改setu_config.py中对应的值(Pixiv用户名形如user_xxxxxxxx)
-
-后略...
+前略，部署mirai并启用mirai-api-http插件
+'''
+git clone https://github.com/umauc/setu.git
+cd setu
+pip3 install -r requirements.txt
+cp config.example.py config.py # 之后修改config.py中的参数
+python3 setu.py
+'''
 
 ## 使用
 
-先#SETU init
+初始化：#SETU init
 
 详细:(附录请无视)
 
