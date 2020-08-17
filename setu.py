@@ -5,9 +5,6 @@ import json
 import random
 import os
 import requests
-from tenacity import stop
-from tenacity.retry import retry_if_exception, retry_if_exception_type
-from tenacity.stop import stop_after_attempt
 from mirai import Mirai, Plain, GroupMessage, Group, Image, Member, At, FriendMessage, MessageChain, Friend, TempMessage
 import regex
 from bs4 import BeautifulSoup
