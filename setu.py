@@ -54,7 +54,10 @@ async def setu(app: GraiaMiraiApplication, gm: GroupMessage, group: Group, membe
                 try:
                     bot_message = await app.sendGroupMessage(group, MessageChain.create([Plain(text=setu_large_url), Image.fromNetworkAddress(url=setu_url)]))
                 except:
-                    bot_message = await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_large_url)]))
+                    try:
+                        await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url),Image.fromNetworkAddress(url=setu_url)]))
+                    except:
+                        await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url)]))
                 permission = config.permission_get(member.id)
                 if permission >= 4:
                     pass
@@ -129,7 +132,10 @@ async def setu(app: GraiaMiraiApplication, gm: GroupMessage, group: Group, membe
                             try:
                                 bot_message = await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_large_url),Image.fromNetworkAddress(url=setu_get.url)]))
                             except:
-                                bot_message = await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_large_url)]))
+                                try:
+                                    await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url),Image.fromNetworkAddress(url=setu_url)]))
+                                except:
+                                    await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url)]))
                             permission = config.permission_get(member.id)
                             if permission >= 4:
                                 pass
@@ -188,14 +194,17 @@ async def setu(app: GraiaMiraiApplication, gm: GroupMessage, group: Group, membe
                                 try:
                                     bot_message = await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_get.url),Image.fromNetworkAddress(url=setu_url)]))
                                 except:
-                                    bot_message = await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url)]))
-                                    permission = config.permission_get(member.id)
-                                    if permission >= 4:
-                                        pass
-                                    else:
-                                        await asyncio.sleep(config.revoke(member.id))
-                                        await app.revokeMessage(bot_message.messageId)
-                                    config.count(member.id)
+                                    try:
+                                        await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url),Image.fromNetworkAddress(url=setu_url)]))
+                                    except:
+                                        await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url)]))
+                                permission = config.permission_get(member.id)
+                                if permission >= 4:
+                                    pass
+                                else:
+                                    await asyncio.sleep(config.revoke(member.id))
+                                    await app.revokeMessage(bot_message.messageId)
+                                config.count(member.id)
                             else:
                                 await app.sendGroupMessage(group, [At(target=member.id), Image.fromNetworkAddress(url='https://s1.ax1x.com/2020/07/28/aE47NR.jpg')])
             except:
@@ -213,7 +222,10 @@ async def setu(app: GraiaMiraiApplication, gm: GroupMessage, group: Group, membe
                 try:
                     bot_message = await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_large_url),Image.fromNetworkAddress(url=setu_url)]))
                 except:
-                    await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_large_url)]))
+                    try:
+                        await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url),Image.fromNetworkAddress(url=setu_url)]))
+                    except:
+                        await app.sendGroupMessage(group,MessageChain.create([Plain(text=setu_url)]))
                 permission = config.permission_get(member.id)
                 if permission >= 4:
                     pass
