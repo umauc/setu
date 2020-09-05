@@ -93,7 +93,7 @@ async def pic_get(url):
         if url_list == []:
             return 0
         else:
-            return int(regex.compile('(^https://www.pixiv.net/artworks/(\d*)$)', regex.I).match(url_list[0])[2])
+            return int(regex.compile(r'(^https://www.pixiv.net/artworks/(\d*)$)', regex.I).match(url_list[0])[2])
     except:
         pass
 
@@ -293,6 +293,26 @@ async def setu(app: Mirai, gm: GroupMessage, group: Group, member: Member):
                         await app.sendGroupMessage(group,[At(target=member.id),Plain(text='你是个锤子插件管理员，爪巴')])
                 elif keyword == 'upload':
                     await app.sendGroupMessage(group,[At(target=member.id),Plain(text='请在私聊中完成上传操作')])
+                elif keyword.find('fupload') == 0:
+                    permission = config.permission_get(member.id)
+                    if permission >= 2:
+                        try:
+                            try:
+                                setu_list_raw = keyword.replace('fupload','').split(',')
+                                setu_list = []
+                                for i in setu_list_raw:
+                                    setu_list.append(int(i))
+                                config.upload(setu_list)
+                                config.upload_count(member.id,len(setu_list))
+                                await app.sendGroupMessage(group,[At(target=member.id),Plain(text='上传成功！')])
+                            except:
+                                config.upload([int(keyword.replace('fupload',''))])
+                                config.upload_count(member.id,1)
+                                await app.sendGroupMessage(group,[At(target=member.id),Plain(text='上传成功！')])
+                        except:
+                            await app.sendGroupMessage(group,[At(target=member.id),Plain(text='上传失败！')])
+                    else:
+                        await app.sendGroupMessage(group,[At(target=member.id),Plain(text='你无权限使用快速上传功能')])
                 elif keyword == 'zero':
                     permission = config.permission_get(member.id)
                     if permission == 6:
