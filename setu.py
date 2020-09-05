@@ -272,7 +272,7 @@ async def setu(app: GraiaMiraiApplication, gm: GroupMessage, group: Group, membe
                     config.count(member.id)
                 else:
                     await app.sendGroupMessage(group, MessageChain.create([At(target=member.id), Image.fromNetworkAddress(url='https://s1.ax1x.com/2020/07/28/aE47NR.jpg')]))
-                if count = 1:
+                if count == 1:
                     break
                 count += 1
 setuon = False
