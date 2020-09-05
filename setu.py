@@ -246,8 +246,8 @@ async def setu(app: GraiaMiraiApplication, gm: GroupMessage, group: Group, membe
                 await app.sendGroupMessage(group, MessageChain.create([At(target=member.id), Image.fromNetworkAddress(url='https://s1.ax1x.com/2020/07/28/aE47NR.jpg')]))
         elif imageID == '{1A272931-CE44-FFC6-F935-FDA1B04D9A39}.mirai':
             bot_message = []
-            range = [0,1]
-            for i in range:
+            count = 0
+            while True:
                 if config.count_get(member.id) <= config.limit(member.id):
                     setu_data = setu_get.local()
                     setu_pid = setu_data.get('pid')
@@ -272,6 +272,9 @@ async def setu(app: GraiaMiraiApplication, gm: GroupMessage, group: Group, membe
                     config.count(member.id)
                 else:
                     await app.sendGroupMessage(group, MessageChain.create([At(target=member.id), Image.fromNetworkAddress(url='https://s1.ax1x.com/2020/07/28/aE47NR.jpg')]))
+                if count = 1:
+                    break
+                count += 1
 setuon = False
 
 
