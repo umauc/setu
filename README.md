@@ -4,6 +4,7 @@
 
 前略...(部署mirai,clone,安装依赖)
 
+
 前略，部署mirai并启用mirai-api-http插件
 
 ```
@@ -17,3 +18,4 @@ python3 setu.py
 ## 使用
 
 TODO
+
