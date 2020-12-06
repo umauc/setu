@@ -208,7 +208,6 @@ async def friend_listener(app: GraiaMiraiApplication, message:MessageChain, frie
         def waiter(event: FriendMessage, waiter_friend: Friend, waiter_message: MessageChain):
             if all([waiter_friend.id == friend.id,MessageChain.has(waiter_message,Image)]):
                 setu_upload_urls.append(waiter_message.get(Image)[0].url)
-                print('1')
                 return event
         await inc.wait(waiter)
     elif message.asDisplay() == '#SETU upload stop':
