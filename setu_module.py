@@ -47,6 +47,7 @@ class user_data(object):
         """
         self.user_check(qid)
         self.db.update({'use_times':self.get_use_time(qid)+1},where('qid') == qid)
+        self.refresh_premission(qid)
 
     def clear_use_time(self):
         for i in self.db.all():

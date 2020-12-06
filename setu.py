@@ -11,6 +11,8 @@ from graia.application.group import Member, Group
 from graia.application.friend import Friend
 from graia.application.event.messages import FriendMessage
 
+from graia.scheduler import GraiaScheduler
+from graia.scheduler.timers import crontabify
 
 from setu_config import qq,authKey,host,admin
 from setu_module import *
@@ -29,6 +31,10 @@ app = GraiaMiraiApplication(
         websocket=True,  # Graia 已经可以根据所配置的消息接收的方式来保证消息接收部分的正常运作.
     )
 )
+scheduler = GraiaScheduler(
+    loop, bcc
+)
+
 
 user_data = user_data()
 setu = setu()
@@ -88,10 +94,13 @@ class SetuHandler(object):
         elif mode == 'init':
             await self.count(group=var_dict.get('group'), qid=var_dict.get('qid'))
         elif mode == 'r18':
-            if bool(var_dict.get('arg')):
-                await SetuMessageChain.Sender(r18=True,qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='remote', qid=var_dict.get('qid'),keyword=var_dict.get('arg'),r18=True))
+            if user_data.get_permission(var_dict.get('qid')) >= 2:
+                if bool(var_dict.get('arg')):
+                    await SetuMessageChain.Sender(r18=True,qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='remote', qid=var_dict.get('qid'),keyword=var_dict.get('arg'),r18=True))
+                else:
+                    await SetuMessageChain.Sender(r18=True,qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='local', qid=var_dict.get('qid'),r18=True))
             else:
-                await SetuMessageChain.Sender(r18=True,qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='local', qid=var_dict.get('qid'),r18=True))
+                await SetuMessageChain.FastSender(group=var_dict.get('group'), qid=var_dict.get('qid'), text='你也配？')
         elif mode == '':
             await SetuMessageChain.Sender(qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='local', qid=var_dict.get('qid')))
         else:
@@ -229,4 +238,10 @@ async def friend_listener(app: GraiaMiraiApplication, message:MessageChain, frie
         except:
             setu_upload_pids.clear()
             setu_upload_urls.clear()
+
+
+@scheduler.schedule(crontabify("0 4 * * * *"))
+def clear_use_times():
+    user_data.clear_use_time()
+
 app.launch_blocking()
