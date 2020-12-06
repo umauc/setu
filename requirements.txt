@@ -1,0 +1,10 @@
+aiohttp
+Pillow
+graia-application
+graia-broadcast
+regex
+beautifulsoup4
+imagehash
+pixivpy
+graia-scheduler
+tinydb

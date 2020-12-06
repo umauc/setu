@@ -1,4 +1,3 @@
-from os import remove
 from graia.broadcast.interrupt.waiter import Waiter
 from graia.broadcast import Broadcast
 from graia.application import GraiaMiraiApplication, Session
