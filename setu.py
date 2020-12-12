@@ -49,7 +49,7 @@ class SetuMessageChain(object):
         title = setu_info.get('title')
         pid = setu_info.get('pid')
         url = setu_info.get('url')
-        return [MessageChain.create([At(qid), Plain(text=f'标题:{title}，ID:{pid}，图片下载：https://www.pixivdl.net/artworks/{pid}')]), MessageChain.create([At(qid), Image.fromNetworkAddress(url)])]
+        return [MessageChain.create([At(qid), Plain(text=f'标题:{title}，ID:{pid}，图片下载：https://pixivic.com/illusts/{pid}')]), MessageChain.create([At(qid), Image.fromNetworkAddress(url)])]
 
     async def Sender(self, group, qid, Creater,r18=False):
         if user_data.get_use_time(qid) <= user_data.get_limit(qid):
