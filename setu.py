@@ -175,11 +175,12 @@ SetuHandler = SetuHandler()
 @bcc.receiver("GroupMessage")
 async def group_listener(app: GraiaMiraiApplication, MessageChain:MessageChain, group: Group, member:Member):
     message = MessageChain.asDisplay()
-    if message == '来点色图' or message == '色图来':
+    if message == '来点色图' or message == '色图来' or message == '色图时间':
         await SetuMessageChain.Sender(group=group,qid=member.id,Creater=await SetuMessageChain.Creater(setu_type='remote',qid=member.id))
     try:
         if MessageChain.get(Image)[0].imageId == '{B407F708-A2C6-A506-3420-98DF7CAC4A57}.mirai':
             await SetuMessageChain.Sender(group=group,qid=member.id,Creater=await SetuMessageChain.Creater(setu_type='remote',qid=member.id))
+#        elif MessageChain.get(Image)[0].imageId == '{}':
     except:
         pass
     try:
