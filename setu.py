@@ -80,10 +80,13 @@ class SetuHandler(object):
         elif mode == 'upload':
             await self.upload(group=var_dict.get('group'), qid=var_dict.get('qid'))
         elif mode == 'fupload':
-            try:
-                await self.fupload(group=var_dict.get('group'), qid=var_dict.get('qid'),pids=var_dict.get('arg').split(','))
-            except:
-                await self.fupload(group=var_dict.get('group'), qid=var_dict.get('qid'), pids=[var_dict.get('arg')])
+            if user_data.get_permission(var_dict.get('qid')) >=2:
+                try:
+                    await self.fupload(group=var_dict.get('group'), qid=var_dict.get('qid'),pids=var_dict.get('arg').split(','))
+                except:
+                    await self.fupload(group=var_dict.get('group'), qid=var_dict.get('qid'), pids=[var_dict.get('arg')])
+            else:
+                await SetuMessageChain.FastSender(group=var_dict.get('group'), qid=var_dict.get('qid'), text='你也配？')
         elif mode == 'clear':
             await self.clear(group=var_dict.get('group'), qid=var_dict.get('qid'))
         elif mode == 'count':
