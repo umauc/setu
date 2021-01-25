@@ -1,6 +1,6 @@
 aiohttp
 Pillow
-graia-application
+graia-application-mirai
 graia-broadcast
 regex
 beautifulsoup4

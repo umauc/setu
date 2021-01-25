@@ -13,10 +13,8 @@ from graia.application.event.messages import FriendMessage
 from graia.scheduler import GraiaScheduler
 from graia.scheduler.timers import crontabify
 
-from setu_config import qq,authKey,host,admin
+from setu_config import qq, authKey, host, admin
 from setu_module import *
-
-
 
 loop = asyncio.get_event_loop()
 
@@ -34,8 +32,7 @@ scheduler = GraiaScheduler(
     loop, bcc
 )
 
-
-user_data = user_data()
+user_data = userData()
 setu = setu()
 inc = InterruptControl(bcc)
 
@@ -43,15 +40,18 @@ inc = InterruptControl(bcc)
 class SetuMessageChain(object):
     async def Creater(self, setu_type, qid, keyword='', r18=False):
         if setu_type == 'local':
-            setu_info = await setu.get_local(r18=r18)
+            setu_info = await setu.get_local(loop, r18=r18)
+            url = setu_info.get('small_url')
         else:
             setu_info = await setu.get_remote(keyword=keyword, r18=r18)
+            url = setu_info.get('url')
         title = setu_info.get('title')
         pid = setu_info.get('pid')
-        url = setu_info.get('url')
-        return [MessageChain.create([At(qid), Plain(text=f'标题:{title}，ID:{pid}，图片下载：https://pixivic.com/illusts/{pid}')]), MessageChain.create([At(qid), Image.fromNetworkAddress(url)])]
+        return [
+            MessageChain.create([At(qid), Plain(text=f'标题:{title}，ID:{pid}，图片下载：https://pixivic.com/illusts/{pid}')]),
+            MessageChain.create([At(qid), Image.fromNetworkAddress(url)])]
 
-    async def Sender(self, group, qid, Creater,r18=False):
+    async def Sender(self, group, qid, Creater, r18=False):
         if user_data.get_use_time(qid) <= user_data.get_limit(qid):
             CreaterData = Creater
             await app.sendGroupMessage(group, CreaterData[0])
@@ -61,28 +61,31 @@ class SetuMessageChain(object):
                 await asyncio.sleep(user_data.get_revoke_time(qid))
                 await app.revokeMessage(bot_message)
         else:
-            await app.sendGroupMessage(group, MessageChain.create([At(target=qid), Image.fromNetworkAddress(url='https://s1.ax1x.com/2020/07/28/aE47NR.jpg')]))
+            await app.sendGroupMessage(group, MessageChain.create(
+                [At(target=qid), Image.fromNetworkAddress(url='https://s1.ax1x.com/2020/07/28/aE47NR.jpg')]))
 
-    async def FastSender(self,group,qid,text):
+    async def FastSender(self, group, qid, text):
         await app.sendGroupMessage(group, MessageChain.create([At(target=qid), Plain(text=text)]))
 
 
 SetuMessageChain = SetuMessageChain()
 
+
 class SetuHandler(object):
-    async def modeChoser(self,**var_dict):
+    async def modeChoser(self, **var_dict):
         '''
         传入mode，group，qid，arg
         '''
         mode = var_dict.get('mode')
         if mode == 'info':
-            await self.info(qid=var_dict.get('qid'),group=var_dict.get('group'))
+            await self.info(qid=var_dict.get('qid'), group=var_dict.get('group'))
         elif mode == 'upload':
             await self.upload(group=var_dict.get('group'), qid=var_dict.get('qid'))
         elif mode == 'fupload':
-            if user_data.get_permission(var_dict.get('qid')) >=2:
+            if user_data.get_permission(var_dict.get('qid')) >= 2:
                 try:
-                    await self.fupload(group=var_dict.get('group'), qid=var_dict.get('qid'),pids=var_dict.get('arg').split(','))
+                    await self.fupload(group=var_dict.get('group'), qid=var_dict.get('qid'),
+                                       pids=var_dict.get('arg').split(','))
                 except:
                     await self.fupload(group=var_dict.get('group'), qid=var_dict.get('qid'), pids=[var_dict.get('arg')])
             else:
@@ -98,15 +101,26 @@ class SetuHandler(object):
         elif mode == 'r18':
             if user_data.get_permission(var_dict.get('qid')) >= 2:
                 if bool(var_dict.get('arg')):
-                    await SetuMessageChain.Sender(r18=True,qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='remote', qid=var_dict.get('qid'),keyword=var_dict.get('arg'),r18=True))
+                    await SetuMessageChain.Sender(r18=True, qid=var_dict.get('qid'), group=var_dict.get('group'),
+                                                  Creater=await SetuMessageChain.Creater(setu_type='remote',
+                                                                                         qid=var_dict.get('qid'),
+                                                                                         keyword=var_dict.get('arg'),
+                                                                                         r18=True))
                 else:
-                    await SetuMessageChain.Sender(r18=True,qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='local', qid=var_dict.get('qid'),r18=True))
+                    await SetuMessageChain.Sender(r18=True, qid=var_dict.get('qid'), group=var_dict.get('group'),
+                                                  Creater=await SetuMessageChain.Creater(setu_type='local',
+                                                                                         qid=var_dict.get('qid'),
+                                                                                         r18=True))
             else:
                 await SetuMessageChain.FastSender(group=var_dict.get('group'), qid=var_dict.get('qid'), text='你也配？')
         elif mode == '':
-            await SetuMessageChain.Sender(qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='local', qid=var_dict.get('qid')))
+            await SetuMessageChain.Sender(qid=var_dict.get('qid'), group=var_dict.get('group'),
+                                          Creater=await SetuMessageChain.Creater(setu_type='local',
+                                                                                 qid=var_dict.get('qid')))
         else:
-            await SetuMessageChain.Sender(qid=var_dict.get('qid'), group=var_dict.get('group'), Creater=await SetuMessageChain.Creater(setu_type='remote', qid=var_dict.get('qid'),keyword=mode))
+            await SetuMessageChain.Sender(qid=var_dict.get('qid'), group=var_dict.get('group'),
+                                          Creater=await SetuMessageChain.Creater(setu_type='remote',
+                                                                                 qid=var_dict.get('qid'), keyword=mode))
 
     async def info(self, **var_dict):
         '''
@@ -116,7 +130,8 @@ class SetuHandler(object):
         upload_count = user_data.get_upload_time(var_dict.get('qid'))
         use_times = user_data.get_use_time(var_dict.get('qid'))
         limit = user_data.get_limit(var_dict.get('qid'))
-        await SetuMessageChain.FastSender(group=var_dict.get('group'),qid=var_dict.get('qid'),text=f'权限组：{permission}，图片上传次数：{upload_count}，已请求次数：{use_times}，剩余请求次数：{limit-use_times}')
+        await SetuMessageChain.FastSender(group=var_dict.get('group'), qid=var_dict.get('qid'),
+                                          text=f'权限组：{permission}，图片上传次数：{upload_count}，已请求次数：{use_times}，剩余请求次数：{limit - use_times}')
 
     async def upload(self, **var_dict):
         '''
@@ -130,7 +145,7 @@ class SetuHandler(object):
         '''
         if user_data.get_permission(var_dict.get('qid')) >= 0:
             for i in var_dict.get('pids'):
-                pic_info = await setu.get_info(i)
+                pic_info = await get_info(i)
                 if pic_info.get('r18'):
                     setu.local_upload(pid=i, r18=True)
                 else:
@@ -151,7 +166,8 @@ class SetuHandler(object):
         '''
         传入group，qid
         '''
-        await SetuMessageChain.FastSender(group=var_dict.get('group'), qid=var_dict.get('qid'), text=f'图片总数为{setu.local_upload_count_all()}张')
+        await SetuMessageChain.FastSender(group=var_dict.get('group'), qid=var_dict.get('qid'),
+                                          text=f'图片总数为{setu.local_upload_count_all()}张')
 
     async def delete(self, **var_dict):
         '''
@@ -168,22 +184,26 @@ class SetuHandler(object):
 
     async def init(self, **var_dict):
         if var_dict.get('qid') == admin:
-            user_data.set_permission(qid=admin,permission=5)
+            user_data.set_permission(qid=admin, permission=5)
             await SetuMessageChain.FastSender(group=var_dict.get('group'), qid=var_dict.get('qid'), text='初始化成功！')
         else:
             await SetuMessageChain.FastSender(group=var_dict.get('group'), qid=var_dict.get('qid'), text='你也配？')
 
+
 SetuHandler = SetuHandler()
 
+
 @bcc.receiver("GroupMessage")
-async def group_listener(app: GraiaMiraiApplication, MessageChain:MessageChain, group: Group, member:Member):
+async def group_listener(app: GraiaMiraiApplication, MessageChain: MessageChain, group: Group, member: Member):
     message = MessageChain.asDisplay()
     if message == '来点色图' or message == '色图来' or message == '色图时间':
-        await SetuMessageChain.Sender(group=group,qid=member.id,Creater=await SetuMessageChain.Creater(setu_type='remote',qid=member.id))
+        await SetuMessageChain.Sender(group=group, qid=member.id,
+                                      Creater=await SetuMessageChain.Creater(setu_type='local', qid=member.id))
     try:
-        if MessageChain.get(Image)[0].imageId == '{B407F708-A2C6-A506-3420-98DF7CAC4A57}.mirai':
-            await SetuMessageChain.Sender(group=group,qid=member.id,Creater=await SetuMessageChain.Creater(setu_type='remote',qid=member.id))
-#        elif MessageChain.get(Image)[0].imageId == '{}':
+        if MessageChain.get(Image)[0].imageId == '{B407F708-A2C6-A506-3420-98DF7CAC4A57}.jpg':
+            await SetuMessageChain.Sender(group=group, qid=member.id,
+                                          Creater=await SetuMessageChain.Creater(setu_type='local', qid=member.id))
+    #        elif MessageChain.get(Image)[0].imageId == '{}':
     except:
         pass
     try:
@@ -196,46 +216,51 @@ async def group_listener(app: GraiaMiraiApplication, MessageChain:MessageChain, 
                 arg = message.split(' ')[2]
             except:
                 arg = ''
-            await SetuHandler.modeChoser(mode=mode,group=group,qid=member.id,arg=arg)
+            await SetuHandler.modeChoser(mode=mode, group=group, qid=member.id, arg=arg)
     except:
         pass
 
-#存储用临时变量
+
+# 存储用临时变量
 setu_upload_urls = []
 setu_upload_pids = []
 
+
 @bcc.receiver("FriendMessage")
-async def friend_listener(app: GraiaMiraiApplication, message:MessageChain, friend:Friend):
+async def friend_listener(app: GraiaMiraiApplication, message: MessageChain, friend: Friend):
     if message.asDisplay() == "#SETU upload start":
         await app.sendFriendMessage(friend, MessageChain.create([Plain("请发送图片")]))
+
         @Waiter.create_using_function([FriendMessage])
         def waiter(event: FriendMessage, waiter_friend: Friend, waiter_message: MessageChain):
-            if all([waiter_friend.id == friend.id,MessageChain.has(waiter_message,Image)]):
+            if all([waiter_friend.id == friend.id, MessageChain.has(waiter_message, Image)]):
                 setu_upload_urls.append(waiter_message.get(Image)[0].url)
                 return event
+
         while message.asDisplay() != '#SETU upload stop':
             await inc.wait(waiter)
     elif message.asDisplay() == '#SETU upload stop':
         try:
             await app.sendFriendMessage(friend, MessageChain.create([Plain(f"开始处理，已接收{len(setu_upload_urls)}图片")]))
-            for i in setu_upload_urls:  #丢到ascii2d里面识别
+            for i in setu_upload_urls:  # 丢到ascii2d里面识别
                 setu_upload_pids.append(await pic_get(i))
-            for i in setu_upload_urls: #图片比对
+            for i in setu_upload_urls:  # 图片比对
                 for j in setu_upload_pids:
-                    pic_info = await setu.get_info(j)
+                    pic_info = await get_info(j)
                     pid_url = pic_info.get('url')
-                    if await image_match(i,pid_url) <= 0.8:
+                    if await image_match(i, pid_url) <= 0.8:
                         setu_upload_pids.remove(j)
             for i in setu_upload_pids:
-                pic_info = await setu.get_info(i)
+                pic_info = await get_info(i)
                 r18 = pic_info.get('r18')
                 if r18:
-                    setu.local_upload(pid=i,r18=True)
+                    setu.local_upload(pid=i, r18=True)
                 else:
                     setu.local_upload(pid=i)
             for i in range(len(setu_upload_pids)):
                 user_data.set_upload_time(qid=friend.id)
-            await app.sendFriendMessage(friend, MessageChain.create([Plain(f"上传成功！接收图片：{len(setu_upload_urls)}张，成功上传：{len(setu_upload_pids)}张，上传失败：{len(setu_upload_urls)-len(setu_upload_pids)}张")]))
+            await app.sendFriendMessage(friend, MessageChain.create([Plain(
+                f"上传成功！接收图片：{len(setu_upload_urls)}张，成功上传：{len(setu_upload_pids)}张，上传失败：{len(setu_upload_urls) - len(setu_upload_pids)}张")]))
             setu_upload_pids.clear()
             setu_upload_urls.clear()
         except:
@@ -246,5 +271,6 @@ async def friend_listener(app: GraiaMiraiApplication, message:MessageChain, frie
 @scheduler.schedule(crontabify("0 4 * * * *"))
 def clear_use_times():
     user_data.clear_use_time()
+
 
 app.launch_blocking()

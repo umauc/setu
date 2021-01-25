@@ -1,24 +1,48 @@
-from tinydb import TinyDB, where
-import imagehash
+import asyncio
+from io import BytesIO
+
 import aiohttp
+import imagehash
+import regex
 from PIL import Image as Images
 from PIL import ImageFile
 from bs4 import BeautifulSoup
-from io import BytesIO
-import regex
+from tinydb import TinyDB, where
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from random import choice
 from setu_config import apikey
+from concurrent.futures import ThreadPoolExecutor
+from pixivpy3 import ByPassSniApi
+
+api = ByPassSniApi()
+
+def init():
+    api.require_appapi_hosts(hostname="public-api.secure.pixiv.net")
+    api.set_accept_language('en-us')
+    api.login('user_vwxa2245', '1008611aA_')
+
+init()
+
+def get_pixiv_info(pid):
+    try:
+        result = api.illust_detail(pid)
+    except:
+        init()
+        result = api.illust_detail(pid)
+    return result
+
 
 class PicNotFoundError(Exception):
     pass
 
-class user_data(object):
+
+class userData(object):
     def __init__(self):
         self.db = TinyDB('data.json').table('user')
 
-    def user_check(self,qid):
-        if bool(self.db.search(where('qid') == qid)) == False:
+    def user_check(self, qid):
+        if not bool(self.db.search(where('qid') == qid)):
             self.user_init(qid)
 
     def user_init(self, qid):
@@ -34,7 +58,7 @@ class user_data(object):
 
     def get_limit(self, qid):
         self.user_check(qid)
-        limit_dict = {'0':3,'1':10,'2':25,'3':40,'4':10000,'5':10000}
+        limit_dict = {'0': 3, '1': 10, '2': 25, '3': 40, '4': 10000, '5': 10000}
         return limit_dict.get(str(self.db.search(where('qid') == qid)[0].get('permission')))
 
     def get_use_time(self, qid):
@@ -46,16 +70,16 @@ class user_data(object):
         每次+1
         """
         self.user_check(qid)
-        self.db.update({'use_times':self.get_use_time(qid)+1},where('qid') == qid)
+        self.db.update({'use_times': self.get_use_time(qid) + 1}, where('qid') == qid)
         self.refresh_premission(qid)
 
     def clear_use_time(self):
         for i in self.db.all():
-            self.db.update({'use_times': 0},where('qid') == i.get('qid'))
+            self.db.update({'use_times': 0}, where('qid') == i.get('qid'))
 
     def get_revoke_time(self, qid):
         self.user_check(qid)
-        revoke_time_dict = {'0': 30,'1':30,'2':60,'3':60,'4':260,'5':260}
+        revoke_time_dict = {'0': 30, '1': 30, '2': 60, '3': 60, '4': 260, '5': 260}
         return revoke_time_dict.get(str(self.db.search(where('qid') == qid)[0].get('permission')))
 
     def get_upload_time(self, qid):
@@ -67,47 +91,64 @@ class user_data(object):
         每次+1
         """
         self.user_check(qid)
-        self.db.update({'upload_times':self.get_upload_time(qid)+1},where('qid') == qid)
+        self.db.update({'upload_times': self.get_upload_time(qid) + 1}, where('qid') == qid)
 
-    def refresh_premission(self,qid):
+    def refresh_premission(self, qid):
         permission = self.get_permission(qid)
         local_upload_time = self.get_upload_time(qid)
-        if  permission> 4:
+        if permission > 4:
             pass
         else:
             if local_upload_time < 50:
-                self.set_permission(qid,0)
+                self.set_permission(qid, 0)
             elif local_upload_time >= 50 and local_upload_time < 100:
-                self.set_permission(qid,1)
+                self.set_permission(qid, 1)
             elif local_upload_time >= 100 and local_upload_time < 175:
-                self.set_permission(qid,2)
+                self.set_permission(qid, 2)
             elif local_upload_time >= 175 and local_upload_time < 250:
-                self.set_permission(qid,3)
+                self.set_permission(qid, 3)
             elif local_upload_time >= 250:
-                self.set_permission(qid,4)
+                self.set_permission(qid, 4)
+
+
+def get_info(pid):
+    """
+    返回字典
+    {'pid':xxx,'r18': False,'title':xxx,'url':xxx,'small_url':xxx}
+    """
+    pic_info = get_pixiv_info(pid)
+    pic_title = pic_info['illust']['title']
+    if str(pic_info['illust']['tags']).find('R-18') != -1:
+        pic_r18 = True
+    else:
+        pic_r18 = False
+    pic_url = pic_info['illust']['meta_single_page']['original_image_url'].replace('pximg.net', 'pixiv.cat')
+    pic_large_url = pic_info['illust']['image_urls']['large'].replace('pximg.net', 'pixiv.cat')
+    return {'pid': pid, 'r18': pic_r18, 'title': pic_title, 'url': pic_url, 'small_url': pic_large_url}
+
 
 class setu(object):
     def __init__(self):
         self.db = TinyDB('data.json').table('setu')
 
-    async def get_local(self,r18 = False):
+    async def get_local(self, loop, r18=False):
         """
         获取本地图片，返回字典
         {'pid':xxx,'r18': False,'title':xxx,'url':xxx,'small_url':xxx}
         """
-        if r18 == False:
+        if not r18:
             pid = choice(self.db.search(where('type') == 'all-age')).get('pid')
         else:
             pid = choice(self.db.search(where('type') == 'r18')).get('pid')
-        return await self.get_info(pid)
+        return get_info(pid)
 
-    async def get_remote(self,keyword = '',r18 = False):
+    async def get_remote(self, keyword='', r18=False):
         """
         获取来自lolicon.app的图片，返回字典
         {'pid':xxx,'r18': False,'title':xxx,'url':xxx,'small_url':xxx}
         """
         session = aiohttp.ClientSession()
-        if r18 == False:
+        if not r18:
             async with session.get(f'https://api.lolicon.app/setu/?apikey={apikey}&keyword={keyword}') as resp:
                 pic_info = await resp.json()
             await session.close()
@@ -123,44 +164,24 @@ class setu(object):
                 r18 = True
             pid = pic_info.get('data')[0].get('pid')
             url = pic_info.get('data')[0].get('url')
-            #small_url = setu_info.get('small_url')
+            # small_url = setu_info.get('small_url')
             setu_dict = {'pid': pid, 'r18': r18, 'title': title, 'url': url}
             return setu_dict
         else:
             raise PicNotFoundError
 
-    def local_upload(self, pid,r18=False):
-        """
-        docstring
-        """
-        if bool(self.db.search(where('pid') == pid)) == False:
+    def local_upload(self, pid, r18=False):
+        if not bool(self.db.search(where('pid') == pid)):
             if r18:
-                self.db.insert({'type':'r18','pid':pid})
+                self.db.insert({'type': 'r18', 'pid': pid})
             else:
-                self.db.insert({'type':'all-age','pid':pid})
+                self.db.insert({'type': 'all-age', 'pid': pid})
 
     def local_upload_del(self, pid):
         self.db.remove(where('pid') == pid)
 
     def local_upload_count_all(self):
         return len(self.db.all())
-
-    async def get_info(self,pid):
-        session = aiohttp.ClientSession()
-        async with session.get(f'https://api.imjad.cn/pixiv/v1/?id={pid}') as resp:
-            pic_info = await resp.json()
-        await session.close()
-        if pic_info.get('status') == 'success':
-            title = pic_info.get('response')[0].get('title')
-            if pic_info.get('response')[0].get('age_limit') == 'all-age':
-                r18 = False
-            else:
-                r18 = True
-            url = pic_info.get('response')[0].get('image_urls').get('large').replace('pximg.net','pixiv.cat')
-            #small_url = pic_info.get('response')[0].get('image_urls').get('medium').replace('pximg.net','pixiv.cat')
-            return {'pid':pid,'title':title,'r18':r18,'url':url}
-        else:
-            raise PicNotFoundError
 
 
 async def pic_get(url):
@@ -195,8 +216,6 @@ async def image_match(url1, url2):
             BytesIO(r1)), hash_size=hash_size, highfreq_factor=highfreq_factor)
         hash2 = imagehash.phash(Images.open(
             BytesIO(r2)), hash_size=hash_size, highfreq_factor=highfreq_factor)
-        return 1 - (hash1 - hash2)/len(hash1.hash)**2
+        return 1 - (hash1 - hash2) / len(hash1.hash) ** 2
     except:
         return 0.0
-
-
