@@ -11,8 +11,7 @@ from tinydb import TinyDB, where
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from random import choice
-from setu_config import apikey
-from concurrent.futures import ThreadPoolExecutor
+from setu_config import apikey, pixiv_user, pixiv_password
 from pixivpy3 import ByPassSniApi
 
 api = ByPassSniApi()
@@ -20,7 +19,7 @@ api = ByPassSniApi()
 def init():
     api.require_appapi_hosts(hostname="public-api.secure.pixiv.net")
     api.set_accept_language('en-us')
-    api.login('user_vwxa2245', '1008611aA_')
+    api.login(pixiv_user, pixiv_password)
 
 init()
 
@@ -122,8 +121,8 @@ def get_info(pid):
         pic_r18 = True
     else:
         pic_r18 = False
-    pic_url = pic_info['illust']['meta_single_page']['original_image_url'].replace('pximg.net', 'pixiv.cat')
-    pic_large_url = pic_info['illust']['image_urls']['large'].replace('pximg.net', 'pixiv.cat')
+    pic_url = pic_info['illust']['meta_single_page']['original_image_url'].replace('i.pximg.net', 'pixivdl.sfcloud.workers.dev')
+    pic_large_url = pic_info['illust']['image_urls']['large'].replace('i.pximg.net', 'pixivdl.sfcloud.workers.dev')
     return {'pid': pid, 'r18': pic_r18, 'title': pic_title, 'url': pic_url, 'small_url': pic_large_url}
 
 
