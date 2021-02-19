@@ -4,6 +4,7 @@ from graia.application import GraiaMiraiApplication, Session
 from graia.broadcast.interrupt import InterruptControl
 from graia.application.message.chain import MessageChain
 import asyncio
+import pdb
 
 from graia.application.message.elements.internal import Plain, At, Image
 from graia.application.group import Member, Group
@@ -76,12 +77,13 @@ class SetuHandler(object):
         '''
         传入mode，group，qid，arg
         '''
-        mode = var_dict.get('mode')
+        mode = var_dict.get('mode').strip("\n").strip("\r")
         if mode == 'info':
             await self.info(qid=var_dict.get('qid'), group=var_dict.get('group'))
         elif mode == 'upload':
             await self.upload(group=var_dict.get('group'), qid=var_dict.get('qid'))
         elif mode == 'fupload':
+            print("fupload"+str(var_dict))
             if user_data.get_permission(var_dict.get('qid')) >= 2:
                 try:
                     await self.fupload(group=var_dict.get('group'), qid=var_dict.get('qid'),
@@ -145,7 +147,7 @@ class SetuHandler(object):
         '''
         if user_data.get_permission(var_dict.get('qid')) >= 0:
             for i in var_dict.get('pids'):
-                pic_info = await get_info(i)
+                pic_info = get_info(i)
                 if pic_info.get('r18'):
                     setu.local_upload(pid=i, r18=True)
                 else:
@@ -209,22 +211,22 @@ async def group_listener(app: GraiaMiraiApplication, MessageChain: MessageChain,
     try:
         if message.split(' ')[0] == '#SETU':
             try:
-                mode = message.split(' ')[1]
+                mode = message.split(' ')[1].replace(" ","")
             except:
                 mode = ''
             try:
-                arg = message.split(' ')[2]
+                arg = message.split(' ')[2].replace(" ","")
             except:
                 arg = ''
+            print(mode+" "+arg)
             await SetuHandler.modeChoser(mode=mode, group=group, qid=member.id, arg=arg)
     except:
         pass
 
 
 # 存储用临时变量
-setu_upload_urls = []
+setu_upload_urls = set()
 setu_upload_pids = []
-
 
 @bcc.receiver("FriendMessage")
 async def friend_listener(app: GraiaMiraiApplication, message: MessageChain, friend: Friend):
@@ -232,31 +234,37 @@ async def friend_listener(app: GraiaMiraiApplication, message: MessageChain, fri
         await app.sendFriendMessage(friend, MessageChain.create([Plain("请发送图片")]))
 
         @Waiter.create_using_function([FriendMessage])
-        def waiter(event: FriendMessage, waiter_friend: Friend, waiter_message: MessageChain):
+        async def waiter(event: FriendMessage, waiter_friend: Friend, waiter_message: MessageChain):
             if all([waiter_friend.id == friend.id, MessageChain.has(waiter_message, Image)]):
-                setu_upload_urls.append(waiter_message.get(Image)[0].url)
+                setu_upload_urls.add(waiter_message.get(Image)[0].url)
+                await app.sendFriendMessage(friend, MessageChain.create([Plain("图片已添加")]))
                 return event
-
         while message.asDisplay() != '#SETU upload stop':
             await inc.wait(waiter)
     elif message.asDisplay() == '#SETU upload stop':
         try:
             await app.sendFriendMessage(friend, MessageChain.create([Plain(f"开始处理，已接收{len(setu_upload_urls)}图片")]))
+            await app.sendFriendMessage(friend, MessageChain.create([Plain(f"开始进行图片识别")]))
             for i in setu_upload_urls:  # 丢到ascii2d里面识别
                 setu_upload_pids.append(await pic_get(i))
+            await app.sendFriendMessage(friend, MessageChain.create([Plain(f"开始进行图片相似度比对")]))
             for i in setu_upload_urls:  # 图片比对
-                for j in setu_upload_pids:
-                    pic_info = await get_info(j)
-                    pid_url = pic_info.get('url')
-                    if await image_match(i, pid_url) <= 0.8:
+                for j in setu_upload_pids.copy():
+                    try:
+                        pic_info = get_info(j)
+                        pid_url = pic_info.get('url')
+                        if await image_match(i, pid_url) <= 0.8:
+                            setu_upload_pids.remove(j)
+                    except PicNotFoundError:
                         setu_upload_pids.remove(j)
             for i in setu_upload_pids:
-                pic_info = await get_info(i)
+                pic_info = get_info(i)
                 r18 = pic_info.get('r18')
                 if r18:
                     setu.local_upload(pid=i, r18=True)
                 else:
                     setu.local_upload(pid=i)
+
             for i in range(len(setu_upload_pids)):
                 user_data.set_upload_time(qid=friend.id)
             await app.sendFriendMessage(friend, MessageChain.create([Plain(

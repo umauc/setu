@@ -4,6 +4,7 @@ from io import BytesIO
 import aiohttp
 import imagehash
 import regex
+import pdb
 from PIL import Image as Images
 from PIL import ImageFile
 from bs4 import BeautifulSoup
@@ -11,7 +12,7 @@ from tinydb import TinyDB, where
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from random import choice
-from setu_config import apikey, pixiv_user, pixiv_password
+from setu_config import apikey, refresh_token
 from pixivpy3 import ByPassSniApi
 
 api = ByPassSniApi()
@@ -19,7 +20,7 @@ api = ByPassSniApi()
 def init():
     api.require_appapi_hosts(hostname="public-api.secure.pixiv.net")
     api.set_accept_language('en-us')
-    api.login(pixiv_user, pixiv_password)
+    api.auth(refresh_token=refresh_token)
 
 init()
 
@@ -115,16 +116,18 @@ def get_info(pid):
     返回字典
     {'pid':xxx,'r18': False,'title':xxx,'url':xxx,'small_url':xxx}
     """
-    pic_info = get_pixiv_info(pid)
-    pic_title = pic_info['illust']['title']
-    if str(pic_info['illust']['tags']).find('R-18') != -1:
-        pic_r18 = True
-    else:
-        pic_r18 = False
-    pic_url = pic_info['illust']['meta_single_page']['original_image_url'].replace('i.pximg.net', 'pixivdl.sfcloud.workers.dev')
-    pic_large_url = pic_info['illust']['image_urls']['large'].replace('i.pximg.net', 'pixivdl.sfcloud.workers.dev')
-    return {'pid': pid, 'r18': pic_r18, 'title': pic_title, 'url': pic_url, 'small_url': pic_large_url}
-
+    try:
+        pic_info = get_pixiv_info(int(pid))
+        pic_title = pic_info['illust']['title']
+        if str(pic_info['illust']['tags']).find('R-18') != -1:
+            pic_r18 = True
+        else:
+            pic_r18 = False
+        pic_url = pic_info['illust']['meta_single_page']['original_image_url'].replace('i.pximg.net', 'pixivdl.sfcloud.workers.dev')
+        pic_large_url = pic_info['illust']['image_urls']['large'].replace('i.pximg.net', 'pixivdl.sfcloud.workers.dev')
+        return {'pid': pid, 'r18': pic_r18, 'title': pic_title, 'url': pic_url, 'small_url': pic_large_url}
+    except:
+        raise PicNotFoundError
 
 class setu(object):
     def __init__(self):
@@ -207,10 +210,10 @@ async def image_match(url1, url2):
         hash_size = 8
         async with aiohttp.ClientSession() as session:
             async with session.get(url1) as resp:
-                r1 = await resp.read()
+                r1 = await resp.content.read()
         async with aiohttp.ClientSession() as session:
             async with session.get(url1) as resp:
-                r2 = await resp.read()
+                r2 = await resp.content.read()
         hash1 = imagehash.phash(Images.open(
             BytesIO(r1)), hash_size=hash_size, highfreq_factor=highfreq_factor)
         hash2 = imagehash.phash(Images.open(
