@@ -198,17 +198,17 @@ SetuHandler = SetuHandler()
 @bcc.receiver("GroupMessage")
 async def group_listener(app: GraiaMiraiApplication, MessageChain: MessageChain, group: Group, member: Member):
     message = MessageChain.asDisplay()
-    if message == '来点色图' or message == '色图来' or message == '色图时间':
-        await SetuMessageChain.Sender(group=group, qid=member.id,
-                                      Creater=await SetuMessageChain.Creater(setu_type='local', qid=member.id))
     try:
-        if MessageChain.get(Image)[0].imageId == '{B407F708-A2C6-A506-3420-98DF7CAC4A57}.jpg':
+        if message in ['来点色图','色图来','色图时间',"#RWKK","色图time","不够色"]:
             await SetuMessageChain.Sender(group=group, qid=member.id,
                                           Creater=await SetuMessageChain.Creater(setu_type='local', qid=member.id))
-    #        elif MessageChain.get(Image)[0].imageId == '{}':
-    except:
-        pass
-    try:
+        try:
+            if MessageChain.get(Image)[0].imageId == '{B407F708-A2C6-A506-3420-98DF7CAC4A57}.jpg':
+                await SetuMessageChain.Sender(group=group, qid=member.id,
+                                              Creater=await SetuMessageChain.Creater(setu_type='local', qid=member.id))
+        #        elif MessageChain.get(Image)[0].imageId == '{}':
+        except:
+            pass
         if message.split(' ')[0] == '#SETU':
             try:
                 mode = message.split(' ')[1].replace(" ","")
@@ -220,8 +220,8 @@ async def group_listener(app: GraiaMiraiApplication, MessageChain: MessageChain,
                 arg = ''
             print(mode+" "+arg)
             await SetuHandler.modeChoser(mode=mode, group=group, qid=member.id, arg=arg)
-    except:
-        pass
+    except PicNotFoundError:
+        await app.sendGroupMessage(group,MessageChain.create([At(member.id),Plain("色图获取失败！")]))
 
 
 # 存储用临时变量
